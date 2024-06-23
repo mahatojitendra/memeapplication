@@ -5,6 +5,8 @@ import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/memes")
+@ControllerAdvice
 public class MemeController {
 
     private final MemeService memeService;
@@ -23,7 +26,9 @@ public class MemeController {
     }
 
     @PostMapping("/")
+    @ExceptionHandler(ClassCastException.class)
     public ResponseEntity<?> createMeme(@RequestBody Meme meme) {
+    	try {
     	if (meme == null) {
     		return (ResponseEntity<?>) ResponseEntity.status(HttpStatus.BAD_REQUEST);
     	}
@@ -35,16 +40,23 @@ public class MemeController {
     	if (meme.getUrl() == null || meme.getUrl().isEmpty()) {
     		return (ResponseEntity<?>) ResponseEntity.status(HttpStatus.BAD_REQUEST);
     	}
-    	else if (memeService.findUrl(meme.getUrl()) || memeService.findName(meme.getName()) ) {
-    		return ResponseEntity.status(409).body("{\"error\": \"Duplicate\"}");
-    	}
     	
     	if (meme.getCaption() == null || meme.getCaption().isEmpty()) {
     		return (ResponseEntity<?>) ResponseEntity.status(HttpStatus.BAD_REQUEST);
     	}
+    	else if (memeService.findUrl(meme.getUrl()) 
+    		  && memeService.findName(meme.getName()) 
+    		  && memeService.findCaption(meme.getCaption())) 
+    	{
+    		return ResponseEntity.status(409).body("{\"error\": \"Duplicate\"}");
+    	}
     	
         Meme savedMeme = memeService.saveMeme(meme);
         return ResponseEntity.ok().body("{\"id\": \"" + savedMeme.getId() + "\"}");
+    	}
+    	catch (ClassCastException cerror) {
+    		return ResponseEntity.status(405).body("{\"error\": \"INTERNAL\"}");
+    	}
     }
     
     @GetMapping("/")

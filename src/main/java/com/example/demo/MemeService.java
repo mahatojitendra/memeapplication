@@ -42,4 +42,12 @@ public class MemeService {
 		}
 		return false;
 	}
+	
+	public boolean findCaption(String caption) {
+		Optional<Meme> meme = memeRepository.findByCaption(caption);
+		if (meme.isPresent()) {
+			return true;
+		}
+		return false;
+	}
 }
